@@ -1,0 +1,21 @@
+{
+  "name": "examen8parcial",
+  "version": "1.0.0",
+  "description": "Sistema Web Seguro de Gestión de Librería",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JoseCarlos4747/Examen8Parcial.git"
+  },
+  "keywords": [],
+  "author": "Jose Carlos",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/JoseCarlos4747/Examen8Parcial/issues"
+  },
+  "homepage": "https://github.com/JoseCarlos4747/Examen8Parcial#readme"
+}
