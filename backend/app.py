@@ -21,7 +21,7 @@ app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 app.config.from_object(Config)
 
 # Habilitar CORS para permitir peticiones asíncronas desde el Frontend
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": ["http://127.0.0.1:5000", "http://localhost:5000"]}})
 
 
 # Manejo del ciclo de vida de la base de datos por solicitud (Buenas prácticas Peewee)
