@@ -87,8 +87,7 @@ def bootstrap_application():
 if __name__ == '__main__':
     bootstrap_application()
     print("==================================================")
-    print(">> Servidor EduPapel iniciado exitosamente")
-    print(f">> URL de la Aplicacion: http://127.0.0.1:{Config.PORT}")
+    print(f">> Servidor corriendo en: http://127.0.0.1:{Config.PORT}")
     print(f">> Endpoints de la API:  http://127.0.0.1:{Config.PORT}/api/products")
     print("==================================================")
     app.run(host='0.0.0.0', port=Config.PORT, debug=Config.DEBUG)
