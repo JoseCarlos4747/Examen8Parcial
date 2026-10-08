@@ -1,31 +1,29 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
 env/
 venv/
 ENV/
 .venv/
 
-# Base de datos local (opcional si quieren mantenerla limpia)
-# backend/libreria_escolar.db
+# Base de datos (opcional, no subir)
+*.db
+*.db-shm
+*.db-wal
 
-# Entorno local
-backend/.env
+# Variables de entorno (NUNCA subir)
+.env
 
-# Editor directories and files
+# Node (residuo)
+node_modules/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
 .vscode/
 .idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-.DS_Store
-
