@@ -1,36 +1,44 @@
 """
 Controlador / Rutas de Autenticación.
 Aplica el Principio de Responsabilidad Única (SRP):
-Su única función es recibir solicitudes HTTP, invocar al AuthService y devolver respuestas JSON.
+Recibe solicitudes HTTP, invoca a ServicioAutenticacion y devuelve respuestas JSON.
+Variables, funciones y parámetros en español.
 """
 from flask import Blueprint, request, jsonify
-from services.auth_service import AuthService
+from services.auth_service import ServicioAutenticacion
 
-auth_bp = Blueprint('auth_bp', __name__, url_prefix='/api/auth')
-auth_service = AuthService()
+rutas_autenticacion = Blueprint('rutas_autenticacion', __name__, url_prefix='/api/auth')
+servicio_autenticacion = ServicioAutenticacion()
 
 
-@auth_bp.route('/register', methods=['POST'])
-def register():
+@rutas_autenticacion.route('/register', methods=['POST'])
+@rutas_autenticacion.route('/registro', methods=['POST'])
+def registrar_usuario():
     """Endpoint para registrar un usuario de forma segura."""
-    payload = request.get_json(silent=True) or {}
-    response_data, status_code = auth_service.register(payload)
-    return jsonify(response_data), status_code
+    datos_recibidos = request.get_json(silent=True) or {}
+    respuesta_datos, codigo_estado = servicio_autenticacion.registrar(datos_recibidos)
+    return jsonify(respuesta_datos), codigo_estado
 
 
-@auth_bp.route('/login', methods=['POST'])
-def login():
+@rutas_autenticacion.route('/login', methods=['POST'])
+@rutas_autenticacion.route('/ingreso', methods=['POST'])
+def iniciar_sesion():
     """Endpoint para iniciar sesión verificando hash bcrypt."""
-    payload = request.get_json(silent=True) or {}
-    response_data, status_code = auth_service.login(payload)
-    return jsonify(response_data), status_code
+    datos_recibidos = request.get_json(silent=True) or {}
+    respuesta_datos, codigo_estado = servicio_autenticacion.iniciar_sesion(datos_recibidos)
+    return jsonify(respuesta_datos), codigo_estado
 
 
-@auth_bp.route('/status', methods=['GET'])
-def status():
+@rutas_autenticacion.route('/status', methods=['GET'])
+@rutas_autenticacion.route('/estado', methods=['GET'])
+def verificar_estado():
     """Verifica el estado del servicio de autenticación."""
     return jsonify({
+        'exito': True,
         'success': True,
-        'message': 'Módulo de autenticación seguro activo.'
+        'mensaje': 'Módulo de autenticación seguro activo.'
     }), 200
 
+
+# Alias para compatibilidad
+auth_bp = rutas_autenticacion

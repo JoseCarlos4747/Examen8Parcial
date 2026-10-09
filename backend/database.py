@@ -1,14 +1,14 @@
 """
 Capa de Conexión y Gestión de Base de Datos SQLite usando Peewee ORM.
-Semana 5-6 y 8: El uso de Peewee ORM previene inyecciones SQL (SQLi)
-al parametrizar automáticamente todas las consultas.
+Semana 5-6 y 8: Previene inyecciones SQL (SQLi) con consultas parametrizadas.
+Variables, funciones y parámetros nombrados en español.
 """
 from peewee import SqliteDatabase
-from config import Config
+from config import Configuracion
 
-# Instancia de conexión a SQLite
-db = SqliteDatabase(
-    Config.DB_PATH,
+# Instancia de conexión a la base de datos SQLite
+base_datos = SqliteDatabase(
+    Configuracion.RUTA_BASE_DATOS,
     pragmas={
         'journal_mode': 'wal',
         'cache_size': -1024 * 64,
@@ -19,11 +19,15 @@ db = SqliteDatabase(
 )
 
 
-def init_db(models):
+def inicializar_base_datos(modelos):
     """
     Inicializa la base de datos creando las tablas que no existan.
-    :param models: Lista de clases de modelos Peewee a registrar.
+    :param modelos: Lista de clases de modelos a registrar.
     """
-    with db:
-        db.create_tables(models, safe=True)
+    with base_datos:
+        base_datos.create_tables(modelos, safe=True)
 
+
+# Alias en español y convención
+db = base_datos
+init_db = inicializar_base_datos

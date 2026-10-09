@@ -2,185 +2,189 @@
  * Módulo de Comunicación Asíncrona (Semana 4)
  * Implementa consumo de API REST usando Fetch API y async/await.
  * Manejo completo de promesas, serialización JSON y gestión de errores de red.
+ * Nombres de variables, funciones y métodos en español.
  */
 
 // Detección dinámica de la URL base del Backend
-const BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '5000'
+const URL_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '5000'
     ? '/api'
     : 'http://127.0.0.1:5000/api';
 
-export const ApiService = {
+export const ServicioApi = {
     /**
      * Verifica la disponibilidad del servidor backend.
      */
-    async checkHealth() {
+    async verificarConexion() {
         try {
-            const response = await fetch(`${BASE_URL}/auth/status`, {
+            const respuesta = await fetch(`${URL_BASE}/auth/status`, {
                 method: 'GET',
                 headers: { 'Accept': 'application/json' }
             });
-            return response.ok;
-        } catch (error) {
-            console.warn('[ApiService] Backend no accesible:', error.message);
+            return respuesta.ok;
+        } catch (errorCapturado) {
+            console.warn('[ServicioApi] Backend no accesible:', errorCapturado.message);
             return false;
         }
     },
 
     /**
      * Obtiene el listado de útiles escolares con filtros opcionales.
-     * @param {string} search Término de búsqueda
-     * @param {string} category Categoría seleccionada
+     * @param {string} busqueda Término de búsqueda
+     * @param {string} categoria Categoría seleccionada
      */
-    async getProducts(search = '', category = '') {
+    async obtenerProductos(busqueda = '', categoria = '') {
         try {
-            const params = new URLSearchParams();
-            if (search) params.append('search', search.trim());
-            if (category && category !== 'Todas') params.append('category', category.trim());
+            const parametros = new URLSearchParams();
+            if (busqueda) parametros.append('busqueda', busqueda.trim());
+            if (categoria && categoria !== 'Todas') parametros.append('categoria', categoria.trim());
 
-            const url = `${BASE_URL}/products${params.toString() ? '?' + params.toString() : ''}`;
-            const response = await fetch(url, {
+            const urlConsulta = `${URL_BASE}/products${parametros.toString() ? '?' + parametros.toString() : ''}`;
+            const respuesta = await fetch(urlConsulta, {
                 method: 'GET',
                 headers: { 'Accept': 'application/json' }
             });
 
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || `Error del servidor (${response.status})`);
+            const datosRespuesta = await respuesta.json();
+            if (!respuesta.ok) {
+                const mensajeError = datosRespuesta.mensaje || datosRespuesta.message || `Error del servidor (${respuesta.status})`;
+                throw new Error(mensajeError);
             }
 
-            return data.data || [];
-        } catch (error) {
-            console.error('[ApiService.getProducts] Error:', error);
-            throw error;
+            return datosRespuesta.datos || datosRespuesta.data || [];
+        } catch (errorCapturado) {
+            console.error('[ServicioApi.obtenerProductos] Error:', errorCapturado);
+            throw errorCapturado;
         }
     },
 
     /**
-     * Obtiene los datos de un único producto por ID.
-     * @param {number|string} id 
+     * Obtiene los datos de un único producto por su ID.
+     * @param {number|string} idProducto 
      */
-    async getProductById(id) {
+    async obtenerProductoPorId(idProducto) {
         try {
-            const response = await fetch(`${BASE_URL}/products/${id}`, {
+            const respuesta = await fetch(`${URL_BASE}/products/${idProducto}`, {
                 method: 'GET',
                 headers: { 'Accept': 'application/json' }
             });
 
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Error al obtener el producto.');
+            const datosRespuesta = await respuesta.json();
+            if (!respuesta.ok) {
+                throw new Error(datosRespuesta.mensaje || datosRespuesta.message || 'Error al obtener el producto.');
             }
 
-            return data.data;
-        } catch (error) {
-            console.error('[ApiService.getProductById] Error:', error);
-            throw error;
+            return datosRespuesta.datos || datosRespuesta.data;
+        } catch (errorCapturado) {
+            console.error('[ServicioApi.obtenerProductoPorId] Error:', errorCapturado);
+            throw errorCapturado;
         }
     },
 
     /**
      * Registra un nuevo útil escolar en el backend.
-     * @param {object} productData Datos del nuevo producto
+     * @param {object} datosProducto Datos del nuevo producto
      */
-    async createProduct(productData) {
+    async crearProducto(datosProducto) {
         try {
-            const response = await fetch(`${BASE_URL}/products`, {
+            const respuesta = await fetch(`${URL_BASE}/products`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify(productData)
+                body: JSON.stringify(datosProducto)
             });
 
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Error al registrar el producto.');
+            const datosRespuesta = await respuesta.json();
+            if (!respuesta.ok) {
+                throw new Error(datosRespuesta.mensaje || datosRespuesta.message || 'Error al registrar el producto.');
             }
 
-            return data;
-        } catch (error) {
-            console.error('[ApiService.createProduct] Error:', error);
-            throw error;
+            return datosRespuesta.datos || datosRespuesta.data;
+        } catch (errorCapturado) {
+            console.error('[ServicioApi.crearProducto] Error:', errorCapturado);
+            throw errorCapturado;
         }
     },
 
     /**
      * Actualiza un producto existente en el backend.
-     * @param {number|string} id ID del producto
-     * @param {object} productData Datos actualizados
+     * @param {number|string} idProducto ID del producto
+     * @param {object} datosProducto Datos actualizados
      */
-    async updateProduct(id, productData) {
+    async actualizarProducto(idProducto, datosProducto) {
         try {
-            const response = await fetch(`${BASE_URL}/products/${id}`, {
+            const respuesta = await fetch(`${URL_BASE}/products/${idProducto}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify(productData)
+                body: JSON.stringify(datosProducto)
             });
 
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Error al actualizar el producto.');
+            const datosRespuesta = await respuesta.json();
+            if (!respuesta.ok) {
+                throw new Error(datosRespuesta.mensaje || datosRespuesta.message || 'Error al actualizar el producto.');
             }
 
-            return data;
-        } catch (error) {
-            console.error('[ApiService.updateProduct] Error:', error);
-            throw error;
+            return datosRespuesta.datos || datosRespuesta.data;
+        } catch (errorCapturado) {
+            console.error('[ServicioApi.actualizarProducto] Error:', errorCapturado);
+            throw errorCapturado;
         }
     },
 
     /**
-     * Elimina un producto por ID.
-     * @param {number|string} id ID del producto
+     * Elimina un producto por su ID.
+     * @param {number|string} idProducto ID del producto
      */
-    async deleteProduct(id) {
+    async eliminarProducto(idProducto) {
         try {
-            const response = await fetch(`${BASE_URL}/products/${id}`, {
+            const respuesta = await fetch(`${URL_BASE}/products/${idProducto}`, {
                 method: 'DELETE',
                 headers: { 'Accept': 'application/json' }
             });
 
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Error al eliminar el producto.');
+            const datosRespuesta = await respuesta.json();
+            if (!respuesta.ok) {
+                throw new Error(datosRespuesta.mensaje || datosRespuesta.message || 'Error al eliminar el producto.');
             }
 
-            return data;
-        } catch (error) {
-            console.error('[ApiService.deleteProduct] Error:', error);
-            throw error;
+            return datosRespuesta.datos || datosRespuesta.data;
+        } catch (errorCapturado) {
+            console.error('[ServicioApi.eliminarProducto] Error:', errorCapturado);
+            throw errorCapturado;
         }
     },
 
     /**
      * Autenticación de usuario / administrador con verificación bcrypt.
-     * @param {object} credentials { identifier, password }
+     * @param {object} credenciales { identificador, clave }
      */
-    async login(credentials) {
+    async iniciarSesion(credenciales) {
         try {
-            const response = await fetch(`${BASE_URL}/auth/login`, {
+            const respuesta = await fetch(`${URL_BASE}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify(credentials)
+                body: JSON.stringify(credenciales)
             });
 
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Credenciales incorrectas.');
+            const datosRespuesta = await respuesta.json();
+            if (!respuesta.ok) {
+                throw new Error(datosRespuesta.mensaje || datosRespuesta.message || 'Credenciales incorrectas.');
             }
 
-            return data.data;
-        } catch (error) {
-            console.error('[ApiService.login] Error:', error);
-            throw error;
+            return datosRespuesta.datos || datosRespuesta.data;
+        } catch (errorCapturado) {
+            console.error('[ServicioApi.iniciarSesion] Error:', errorCapturado);
+            throw errorCapturado;
         }
     }
 };
 
+// Alias para compatibilidad
+export const ApiService = ServicioApi;

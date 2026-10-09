@@ -1,34 +1,41 @@
 """
-Clase base para modelos Peewee.
-Aplica Programación Orientada a Objetos (Herencia y Encapsulamiento)
-y el Principio de Responsabilidad Única (SRP).
+Clase base para modelos de base de datos con Peewee ORM.
+Aplica Programación Orientada a Objetos (Herencia y Encapsulamiento).
+Variables, atributos y métodos en español.
 """
 import datetime
 from peewee import Model, DateTimeField
-from database import db
+from database import base_datos
 
 
-class BaseModel(Model):
+class ModeloBase(Model):
     """
-    Clase abstracta/base de la cual heredarán todas las entidades del dominio.
-    Demuestra Herencia en POO para reutilizar la configuración de la BD y fechas.
+    Clase abstracta/padre de la cual heredarán todas las entidades del dominio.
+    Aplica Herencia en POO para compartir configuración de base de datos y campos comunes.
     """
-    created_at = DateTimeField(default=datetime.datetime.now)
+    fecha_creacion = DateTimeField(default=datetime.datetime.now)
 
     class Meta:
-        database = db
+        database = base_datos
 
-    def to_dict(self):
+    def a_diccionario(self):
         """
         Método base para transformar el modelo a un diccionario serializable a JSON.
-        Las clases hijas pueden sobreescribir este método según sus necesidades (Polimorfismo).
+        Demuestra Polimorfismo, permitiendo que las clases hijas lo sobreescriban.
         """
-        data = {}
-        for field_name in self._meta.fields:
-            value = getattr(self, field_name)
-            if isinstance(value, (datetime.datetime, datetime.date)):
-                data[field_name] = value.isoformat()
+        datos = {}
+        for nombre_campo in self._meta.fields:
+            valor = getattr(self, nombre_campo)
+            if isinstance(valor, (datetime.datetime, datetime.date)):
+                datos[nombre_campo] = valor.isoformat()
             else:
-                data[field_name] = value
-        return data
+                datos[nombre_campo] = valor
+        return datos
 
+    # Alias para compatibilidad
+    def to_dict(self):
+        return self.a_diccionario()
+
+
+# Alias para compatibilidad de importación
+BaseModel = ModeloBase

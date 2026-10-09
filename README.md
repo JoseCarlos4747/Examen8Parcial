@@ -1,7 +1,8 @@
 # 📚 EduPapel - Sistema de Gestión de Librería y Útiles Escolares
 
 **Trabajo Parcial: Desarrollo de Aplicaciones Web (Semanas 1 - 8)**  
-Aplicación web completa, modular y segura para la administración del inventario y catálogo de útiles escolares (cuadernos, artículos de escritura, materiales de arte, reglas y papelería).
+Aplicación web completa, modular y segura para la administración del inventario y catálogo de útiles escolares (cuadernos, artículos de escritura, materiales de arte, reglas y papelería general).  
+*Todo el código fuente, modelos, servicios, controladores y variables se encuentran desarrollados en idioma español.*
 
 ---
 
@@ -9,10 +10,10 @@ Aplicación web completa, modular y segura para la administración del inventari
 
 | Criterio | Puntos | Evidencia en el Proyecto |
 | :--- | :---: | :--- |
-| **1. UI, Estructura y DOM (Semanas 1-3)** | **4 / 4** | • Interfaz 100% responsiva y atractiva con **Tailwind CSS** y **HTML5 semántico** (`<header>`, `<nav>`, `<main>`, `<section>`, `<article>`, `<footer>`).<br>• Manipulación limpia y eficiente del DOM con **JavaScript Puro (Vanilla JS)**.<br>• Validación interactiva de formularios en el cliente con feedback visual en tiempo real.<br>• Modales dinámicos y cero errores de consola. |
-| **2. Asincronía y API REST (Semana 4)** | **4 / 4** | • CRUD completo (GET, POST, PUT, DELETE) consumido con **Fetch API** y **async/await**.<br>• Comunicación asíncrona en formato **JSON** sin recargar la página.<br>• Gestión de promesas, estados de carga (spinners) y captura de errores de red con notificaciones toast flotantes. |
-| **3. Arquitectura y POO (Semanas 5-6)** | **4 / 4** | • **POO:** Clases (`Product`, `User`, `BaseModel`, `ProductService`, `AuthService`), Herencia y Encapsulamiento con **Peewee ORM**.<br>• **SOLID:** Especialmente el Principio de Responsabilidad Única (**SRP**) y separación modular en capas (`routes/`, `services/`, `models/`, `security/`). |
-| **4. Seguridad Web y Encriptación (Semana 8)** | **4 / 4** | • **Criptografía:** Almacenamiento seguro de contraseñas mediante **`bcrypt`** con salting dinámico de 12 rondas (cero texto plano).<br>• **OWASP:** Mitigación de inyecciones SQL mediante consultas parametrizadas con Peewee ORM y mitigación de XSS sanitizando entradas en backend (`html.escape`) y DOM (`textContent`).<br>• Cero hardcoding: llaves y configuración cargadas con `python-dotenv` desde `.env`. |
+| **1. UI, Estructura y DOM (Semanas 1-3)** | **4 / 4** | • Interfaz 100% responsiva y atractiva con **Tailwind CSS** y **HTML5 semántico** (`<header>`, `<nav>`, `<main>`, `<section>`, `<article>`, `<footer>`).<br>• Manipulación limpia y eficiente del DOM con **JavaScript Puro (Vanilla JS)** y nombres en español (`dom.js`).<br>• Validación interactiva de formularios en el cliente con feedback visual en tiempo real.<br>• Modales dinámicos y cero errores de consola. |
+| **2. Asincronía y API REST (Semana 4)** | **4 / 4** | • CRUD completo (GET, POST, PUT, DELETE) consumido con **Fetch API** y **async/await** (`api.js` - `ServicioApi`).<br>• Comunicación asíncrona en formato **JSON** sin recargar la página.<br>• Gestión de promesas, estados de carga (spinners) y captura de errores de red con notificaciones toast flotantes. |
+| **3. Arquitectura y POO (Semanas 5-6)** | **4 / 4** | • **POO:** Clases (`Producto`, `Usuario`, `ModeloBase`, `ServicioProducto`, `ServicioAutenticacion`), Herencia y Encapsulamiento con **Peewee ORM**.<br>• **SOLID:** Especialmente el Principio de Responsabilidad Única (**SRP**) y separación modular en capas (`routes/`, `services/`, `models/`, `security/`). |
+| **4. Seguridad Web y Encriptación (Semana 8)** | **4 / 4** | • **Criptografía:** Almacenamiento seguro de contraseñas mediante **`bcrypt`** con salting dinámico de 12 rondas (`EncriptadorClaves.hashear_clave`).<br>• **OWASP:** Mitigación de inyecciones SQL mediante consultas parametrizadas con Peewee ORM y mitigación de XSS sanitizando entradas en backend (`SanitizadorEntradas`) y DOM (`escaparHTML`).<br>• Cero hardcoding: llaves y configuración cargadas con `python-dotenv` desde `.env`. |
 | **5. Entregables y Documentación** | **4 / 4** | • Código fuente documentado con `README.md`.<br>• Manual Técnico conciso en [`docs/Manual_Tecnico_Arquitectura_Seguridad.md`](docs/Manual_Tecnico_Arquitectura_Seguridad.md).<br>• Guión detallado para el video de 5 minutos en [`docs/Guion_Video_Demostrativo.md`](docs/Guion_Video_Demostrativo.md). |
 
 ---
@@ -44,37 +45,37 @@ Examen8Parcial/
 │   ├── .env                       # Variables de entorno locales
 │   ├── .env.example               # Plantilla de variables de entorno (sin secretos)
 │   ├── requirements.txt           # Dependencias de Python
-│   ├── config.py                  # Configuración centralizada (SRP, sin hardcoding)
-│   ├── database.py                # Conexión SQLite con Peewee ORM
-│   ├── seed.py                    # Datos de prueba iniciales (útiles y admin)
+│   ├── config.py                  # Clase Configuracion (SRP, sin hardcoding)
+│   ├── database.py                # Conexión SQLite con Peewee ORM (base_datos)
+│   ├── seed.py                    # Datos de prueba iniciales (sembrar_base_datos)
 │   ├── app.py                     # Punto de entrada y servidor Flask
 │   │
 │   ├── models/                    # Capa de Acceso a Datos (POO / Herencia)
-│   │   ├── base_model.py          # Clase base con id, created_at y to_dict()
-│   │   ├── user_model.py          # Modelo de Usuario con protección de credenciales
-│   │   └── product_model.py       # Modelo de Útiles Escolares
+│   │   ├── base_model.py          # Clase ModeloBase (fecha_creacion, a_diccionario)
+│   │   ├── user_model.py          # Clase Usuario (protección de clave_hash)
+│   │   └── product_model.py       # Clase Producto (útiles escolares)
 │   │
 │   ├── services/                  # Capa de Lógica de Negocio (SOLID - SRP)
-│   │   ├── base_service.py        # Clase base con respuestas estandarizadas
-│   │   ├── auth_service.py        # Lógica de registro y login con bcrypt
-│   │   └── product_service.py     # Lógica del catálogo y validación de reglas
+│   │   ├── base_service.py        # Clase ServicioBase (respuesta_exitosa/error)
+│   │   ├── auth_service.py        # Clase ServicioAutenticacion (login/registro con bcrypt)
+│   │   └── product_service.py     # Clase ServicioProducto (reglas del catálogo escolar)
 │   │
 │   ├── routes/                    # Capa de Controladores / Endpoints REST
-│   │   ├── auth_routes.py         # Endpoints /api/auth
-│   │   └── product_routes.py      # Endpoints /api/products (CRUD)
+│   │   ├── auth_routes.py         # Blueprint rutas_autenticacion
+│   │   └── product_routes.py      # Blueprint rutas_productos (CRUD escolar)
 │   │
 │   └── security/                  # Capa de Seguridad (Semana 8 / OWASP)
-│       ├── hasher.py              # Encriptación con bcrypt
-│       └── sanitizer.py           # Sanitización de entradas anti-XSS y validación
+│       ├── hasher.py              # Clase EncriptadorClaves (bcrypt)
+│       └── sanitizer.py           # Clase SanitizadorEntradas (anti-XSS)
 │
 ├── frontend/
 │   ├── index.html                 # Vista principal semántica y responsiva
 │   ├── css/
 │   │   └── styles.css             # Estilos adicionales, animaciones y modales
 │   └── js/
-│       ├── api.js                 # Consumo asíncrono con Fetch API y async/await
-│       ├── dom.js                 # Manipulación del DOM y sanitización XSS en cliente
-│       └── app.js                 # Eventos, filtros en tiempo real y flujo de usuario
+│       ├── api.js                 # ServicioApi (Fetch API con async/await)
+│       ├── dom.js                 # Manipulación del DOM en español y anti-XSS
+│       └── app.js                 # estadoAplicacion, eventos y flujo del usuario
 │
 ├── docs/
 │   ├── Manual_Tecnico_Arquitectura_Seguridad.md  # Manual técnico para PDF (máx. 4 págs)
@@ -144,9 +145,9 @@ Para probar el inicio de sesión seguro con **bcrypt**:
 ### Módulo de Útiles Escolares (`/api/products`)
 | Método | Endpoint | Descripción |
 | :--- | :--- | :--- |
-| `GET` | `/api/products` | Lista todos los útiles escolares (admite `?search=cuaderno` y `?category=Cuadernos`). |
+| `GET` | `/api/products` | Lista todos los útiles escolares (admite `?busqueda=cuaderno` y `?categoria=Cuadernos`). |
 | `GET` | `/api/products/<id>` | Obtiene el detalle de un útil escolar por ID. |
-| `POST` | `/api/products` | Registra un nuevo útil escolar (requiere JSON con sku, name, category, price, stock). |
+| `POST` | `/api/products` | Registra un nuevo útil escolar (requiere JSON con codigo_sku, nombre, categoria, precio, stock). |
 | `PUT` | `/api/products/<id>` | Actualiza los datos de un útil escolar existente. |
 | `DELETE` | `/api/products/<id>` | Elimina un útil escolar del inventario. |
 

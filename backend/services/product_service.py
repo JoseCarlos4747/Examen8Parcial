@@ -1,159 +1,172 @@
 """
 Servicio de Productos / Útiles Escolares.
-Aplica POO (Hereda de BaseService) y Principio de Responsabilidad Única (SRP).
-Encapsula todas las reglas de negocio y operaciones de base de datos para el CRUD escolar.
+Aplica POO (Hereda de ServicioBase) y Principio de Responsabilidad Única (SRP).
+Encapsula todas las reglas de negocio y operaciones sobre útiles escolares.
+Variables, métodos y parámetros en español.
 """
-from models.product_model import Product
-from services.base_service import BaseService
-from security.sanitizer import InputSanitizer
+from models.product_model import Producto
+from services.base_service import ServicioBase
+from security.sanitizer import SanitizadorEntradas
 
 
-class ProductService(BaseService):
+class ServicioProducto(ServicioBase):
     """
     Gestiona el ciclo de vida de los útiles escolares:
     obtener catálogo, búsquedas, filtrado por categoría, creación, edición y eliminación.
     """
 
-    def get_all(self, search: str = "", category: str = ""):
+    def obtener_todos(self, busqueda: str = "", categoria: str = ""):
         """
         Retorna la lista de productos disponibles con soporte opcional de búsqueda y categoría.
         """
-        query = Product.select().where(Product.is_active == True)
+        consulta = Producto.select().where(Producto.esta_activo == True)
 
         # Sanitizar parámetros de consulta
-        search = InputSanitizer.sanitize_string(search)
-        category = InputSanitizer.sanitize_string(category)
+        busqueda_limpia = SanitizadorEntradas.limpiar_cadena(busqueda)
+        categoria_limpia = SanitizadorEntradas.limpiar_cadena(categoria)
 
-        if category and category.lower() != 'todas':
-            query = query.where(Product.category == category)
+        if categoria_limpia and categoria_limpia.lower() != 'todas':
+            consulta = consulta.where(Producto.categoria == categoria_limpia)
 
-        if search:
-            # Búsqueda parametrizada segura en nombre o código SKU
-            query = query.where(
-                (Product.name.contains(search)) |
-                (Product.sku.contains(search)) |
-                (Product.description.contains(search))
+        if busqueda_limpia:
+            # Búsqueda parametrizada segura en nombre, SKU o descripción
+            consulta = consulta.where(
+                (Producto.nombre.contains(busqueda_limpia)) |
+                (Producto.codigo_sku.contains(busqueda_limpia)) |
+                (Producto.descripcion.contains(busqueda_limpia))
             )
 
-        products = [p.to_dict() for p in query.order_by(Product.name.asc())]
-        return self.success_response(
-            data=products,
-            message=f"Se obtuvieron {len(products)} productos exitosamente.",
-            status_code=200
+        lista_productos = [prod.a_diccionario() for prod in consulta.order_by(Producto.nombre.asc())]
+        return self.respuesta_exitosa(
+            datos=lista_productos,
+            mensaje=f"Se obtuvieron {len(lista_productos)} útiles escolares exitosamente.",
+            codigo_estado=200
         )
 
-    def get_by_id(self, product_id: int):
+    def obtener_por_id(self, id_producto: int):
         """
-        Retorna los detalles de un útil escolar por su ID primario.
+        Retorna los detalles de un útil escolar por su ID numérico.
         """
         try:
-            product = Product.get_or_none((Product.id == product_id) & (Product.is_active == True))
-            if not product:
-                return self.error_response(message="Útil escolar no encontrado.", status_code=404)
-            return self.success_response(data=product.to_dict(), status_code=200)
-        except Exception as ex:
-            return self.error_response(message=f"Error al consultar producto: {str(ex)}", status_code=500)
+            producto = Producto.get_or_none((Producto.id == id_producto) & (Producto.esta_activo == True))
+            if not producto:
+                return self.respuesta_error(mensaje="Útil escolar no encontrado.", codigo_estado=404)
+            return self.respuesta_exitosa(datos=producto.a_diccionario(), codigo_estado=200)
+        except Exception as error_excepcion:
+            return self.respuesta_error(
+                mensaje=f"Error al consultar producto: {str(error_excepcion)}",
+                codigo_estado=500
+            )
 
-    def create(self, payload: dict):
+    def crear(self, datos: dict):
         """
         Valida, sanitiza y crea un nuevo útil escolar en el inventario.
         """
-        is_valid, error_msg, clean_data = InputSanitizer.validate_product_payload(payload)
-        if not is_valid:
-            return self.error_response(message=error_msg, status_code=400)
+        es_valido, mensaje_error, datos_limpios = SanitizadorEntradas.validar_datos_producto(datos)
+        if not es_valido:
+            return self.respuesta_error(mensaje=mensaje_error, codigo_estado=400)
 
-        # Verificar unicidad del SKU (código de producto)
-        sku = clean_data['sku']
-        if Product.select().where(Product.sku == sku).exists():
-            return self.error_response(
-                message=f"Ya existe un producto registrado con el código SKU '{sku}'.",
-                status_code=409
+        # Verificar si el código SKU ya existe
+        sku_a_verificar = datos_limpios['codigo_sku']
+        if Producto.select().where(Producto.codigo_sku == sku_a_verificar).exists():
+            return self.respuesta_error(
+                mensaje=f"Ya existe un producto registrado con el código SKU '{sku_a_verificar}'.",
+                codigo_estado=409
             )
 
         try:
-            new_product = Product.create(
-                sku=clean_data['sku'],
-                name=clean_data['name'],
-                category=clean_data['category'],
-                price=clean_data['price'],
-                stock=clean_data['stock'],
-                description=clean_data['description'],
-                image_url=clean_data['image_url'],
-                is_active=True
+            nuevo_producto = Producto.create(
+                codigo_sku=datos_limpios['codigo_sku'],
+                nombre=datos_limpios['nombre'],
+                categoria=datos_limpios['categoria'],
+                precio=datos_limpios['precio'],
+                stock=datos_limpios['stock'],
+                descripcion=datos_limpios['descripcion'],
+                imagen_url=datos_limpios['imagen_url'],
+                esta_activo=True
             )
-            return self.success_response(
-                data=new_product.to_dict(),
-                message="Útil escolar registrado exitosamente.",
-                status_code=201
+            return self.respuesta_exitosa(
+                datos=nuevo_producto.a_diccionario(),
+                mensaje="Útil escolar registrado exitosamente.",
+                codigo_estado=201
             )
-        except Exception as ex:
-            return self.error_response(
-                message=f"Error al guardar el producto en la base de datos: {str(ex)}",
-                status_code=500
+        except Exception as error_excepcion:
+            return self.respuesta_error(
+                mensaje=f"Error al guardar el producto: {str(error_excepcion)}",
+                codigo_estado=500
             )
 
-    def update(self, product_id: int, payload: dict):
+    def actualizar(self, id_producto: int, datos: dict):
         """
         Valida, sanitiza y actualiza la información de un producto existente.
         """
         try:
-            product = Product.get_or_none((Product.id == product_id) & (Product.is_active == True))
-            if not product:
-                return self.error_response(message="El producto a actualizar no existe.", status_code=404)
+            producto_existente = Producto.get_or_none((Producto.id == id_producto) & (Producto.esta_activo == True))
+            if not producto_existente:
+                return self.respuesta_error(mensaje="El producto a actualizar no existe.", codigo_estado=404)
 
-            is_valid, error_msg, clean_data = InputSanitizer.validate_product_payload(payload)
-            if not is_valid:
-                return self.error_response(message=error_msg, status_code=400)
+            es_valido, mensaje_error, datos_limpios = SanitizadorEntradas.validar_datos_producto(datos)
+            if not es_valido:
+                return self.respuesta_error(mensaje=mensaje_error, codigo_estado=400)
 
-            # Verificar si el SKU cambió y si ya está en uso por otro producto
-            new_sku = clean_data['sku']
-            if new_sku != product.sku:
-                if Product.select().where((Product.sku == new_sku) & (Product.id != product_id)).exists():
-                    return self.error_response(
-                        message=f"El código SKU '{new_sku}' ya está asignado a otro producto.",
-                        status_code=409
+            # Verificar si el código SKU cambió y colisiona con otro registro
+            nuevo_sku = datos_limpios['codigo_sku']
+            if nuevo_sku != producto_existente.codigo_sku:
+                if Producto.select().where((Producto.codigo_sku == nuevo_sku) & (Producto.id != id_producto)).exists():
+                    return self.respuesta_error(
+                        mensaje=f"El código SKU '{nuevo_sku}' ya está asignado a otro producto.",
+                        codigo_estado=409
                     )
 
             # Actualizar campos
-            product.sku = clean_data['sku']
-            product.name = clean_data['name']
-            product.category = clean_data['category']
-            product.price = clean_data['price']
-            product.stock = clean_data['stock']
-            product.description = clean_data['description']
-            product.image_url = clean_data['image_url']
-            product.save()
+            producto_existente.codigo_sku = datos_limpios['codigo_sku']
+            producto_existente.nombre = datos_limpios['nombre']
+            producto_existente.categoria = datos_limpios['categoria']
+            producto_existente.precio = datos_limpios['precio']
+            producto_existente.stock = datos_limpios['stock']
+            producto_existente.descripcion = datos_limpios['descripcion']
+            producto_existente.imagen_url = datos_limpios['imagen_url']
+            producto_existente.save()
 
-            return self.success_response(
-                data=product.to_dict(),
-                message="Útil escolar actualizado con éxito.",
-                status_code=200
+            return self.respuesta_exitosa(
+                datos=producto_existente.a_diccionario(),
+                mensaje="Útil escolar actualizado con éxito.",
+                codigo_estado=200
             )
-        except Exception as ex:
-            return self.error_response(
-                message=f"Error al actualizar el producto: {str(ex)}",
-                status_code=500
+        except Exception as error_excepcion:
+            return self.respuesta_error(
+                mensaje=f"Error al actualizar el producto: {str(error_excepcion)}",
+                codigo_estado=500
             )
 
-    def delete(self, product_id: int):
+    def eliminar(self, id_producto: int):
         """
         Elimina un útil escolar del inventario.
         """
         try:
-            product = Product.get_or_none(Product.id == product_id)
-            if not product:
-                return self.error_response(message="El producto no existe o ya fue eliminado.", status_code=404)
+            producto_a_borrar = Producto.get_or_none(Producto.id == id_producto)
+            if not producto_a_borrar:
+                return self.respuesta_error(mensaje="El producto no existe o ya fue eliminado.", codigo_estado=404)
 
-            # Eliminación física segura o soft-delete
-            product.delete_instance()
-            return self.success_response(
-                data={'id': product_id},
-                message="Útil escolar eliminado correctamente del sistema.",
-                status_code=200
+            producto_a_borrar.delete_instance()
+            return self.respuesta_exitosa(
+                datos={'id': id_producto},
+                mensaje="Útil escolar eliminado correctamente del sistema.",
+                codigo_estado=200
             )
-        except Exception as ex:
-            return self.error_response(
-                message=f"Error al eliminar el producto: {str(ex)}",
-                status_code=500
+        except Exception as error_excepcion:
+            return self.respuesta_error(
+                mensaje=f"Error al eliminar el producto: {str(error_excepcion)}",
+                codigo_estado=500
             )
 
+    # Alias para compatibilidad
+    get_all = obtener_todos
+    get_by_id = obtener_por_id
+    create = crear
+    update = actualizar
+    delete = eliminar
+
+
+# Alias de clase
+ProductService = ServicioProducto

@@ -1,53 +1,57 @@
 """
 Módulo de Seguridad: Criptografía y Hashing con bcrypt.
-Cumple con los requerimientos de la Semana 8:
-- Almacenamiento seguro de contraseñas.
-- Prohibición de guardar credenciales en texto plano.
-- Encapsulamiento en una clase (POO).
+Semana 8: Almacenamiento seguro de contraseñas.
+Nombres de clases, métodos y variables en español.
 """
 import bcrypt
 
 
-class PasswordHasher:
+class EncriptadorClaves:
     """
     Clase responsable del hashing criptográfico y verificación de contraseñas.
     Aplica el Principio de Responsabilidad Única (SRP).
     """
 
     @staticmethod
-    def hash_password(plain_password: str) -> str:
+    def hashear_clave(clave_plana: str) -> str:
         """
         Genera un hash seguro utilizando bcrypt con un salt aleatorio de 12 rondas.
-        :param plain_password: La contraseña en texto plano recibida.
-        :return: String del hash resultante seguro para almacenar en la base de datos.
+        :param clave_plana: La contraseña en texto plano recibida.
+        :return: Cadena de texto con el hash seguro para almacenar en SQLite.
         """
-        if not plain_password or not isinstance(plain_password, str):
+        if not clave_plana or not isinstance(clave_plana, str):
             raise ValueError("La contraseña proporcionada es inválida.")
 
-        # Convertir a bytes para que bcrypt pueda procesarlo
-        password_bytes = plain_password.encode('utf-8')
-        # Generar salt seguro (12 rondas de costo por defecto)
-        salt = bcrypt.gensalt(rounds=12)
+        # Convertir a bytes para el algoritmo de bcrypt
+        bytes_clave = clave_plana.encode('utf-8')
+        # Generar semilla (salt) de 12 rondas de complejidad
+        semilla_salt = bcrypt.gensalt(rounds=12)
         # Generar el hash seguro
-        hashed = bcrypt.hashpw(password_bytes, salt)
-        # Retornar como string decodificado en utf-8
-        return hashed.decode('utf-8')
+        clave_hasheada = bcrypt.hashpw(bytes_clave, semilla_salt)
+        return clave_hasheada.decode('utf-8')
 
     @staticmethod
-    def verify_password(plain_password: str, hashed_password: str) -> bool:
+    def verificar_clave(clave_plana: str, clave_hasheada: str) -> bool:
         """
         Verifica si una contraseña en texto plano coincide con el hash almacenado.
-        :param plain_password: La contraseña ingresada por el usuario.
-        :param hashed_password: El hash guardado en la base de datos.
-        :return: True si coincide, False en caso contrario.
+        :param clave_plana: La contraseña ingresada por el usuario.
+        :param clave_hasheada: El hash guardado en la base de datos.
+        :return: True si coinciden, False en caso contrario.
         """
-        if not plain_password or not hashed_password:
+        if not clave_plana or not clave_hasheada:
             return False
 
         try:
-            password_bytes = plain_password.encode('utf-8')
-            hashed_bytes = hashed_password.encode('utf-8')
-            return bcrypt.checkpw(password_bytes, hashed_bytes)
+            bytes_plano = clave_plana.encode('utf-8')
+            bytes_hash = clave_hasheada.encode('utf-8')
+            return bcrypt.checkpw(bytes_plano, bytes_hash)
         except Exception:
             return False
 
+    # Alias para compatibilidad
+    hash_password = hashear_clave
+    verify_password = verificar_clave
+
+
+# Alias de clase
+PasswordHasher = EncriptadorClaves

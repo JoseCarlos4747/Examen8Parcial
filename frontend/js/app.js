@@ -1,492 +1,502 @@
 /**
  * Archivo Principal de la Aplicación Frontend EduPapel
  * Implementa el flujo de control, gestión de eventos del usuario,
- * coordinación de asincronía (Fetch API) y manipulación del DOM en Vanilla JS.
+ * asincronía con Fetch API y manipulación pura del DOM con Vanilla JS.
+ * Nombres de variables, estados y funciones en español.
  */
-import { ApiService } from './api.js';
+import { ServicioApi } from './api.js';
 import {
-    renderProductCards,
-    renderProductTable,
-    renderStats,
-    showToast,
-    openModal,
-    closeModal,
-    showFieldError,
-    clearFieldErrors
+    renderizarTarjetas,
+    renderizarTabla,
+    renderizarEstadisticas,
+    mostrarToast,
+    abrirModal,
+    cerrarModal,
+    mostrarErrorCampo,
+    limpiarErroresCampos
 } from './dom.js';
 
 // ================= ESTADO DE LA APLICACIÓN =================
-const state = {
-    products: [],
-    selectedCategory: 'Todas',
-    searchQuery: '',
-    currentSort: 'name_asc',
-    currentView: 'grid', // 'grid' | 'table'
-    currentUser: JSON.parse(localStorage.getItem('edupapel_user') || 'null'),
-    pendingDelete: null // { id, name }
+const estadoAplicacion = {
+    listaProductos: [],
+    categoriaSeleccionada: 'Todas',
+    textoBusqueda: '',
+    ordenActual: 'nombre_asc',
+    vistaActual: 'tarjetas', // 'tarjetas' | 'tabla'
+    usuarioActual: JSON.parse(localStorage.getItem('usuario_edupapel') || 'null'),
+    productoAEliminar: null // { id, nombre }
 };
 
 // ================= SELECTORES DEL DOM =================
-const DOM = {
-    // Badges y Botones de cabecera
-    apiStatusBadge: document.getElementById('apiStatusBadge'),
-    btnOpenAuth: document.getElementById('btnOpenAuth'),
-    authStatusText: document.getElementById('authStatusText'),
-    btnOpenNewProduct: document.getElementById('btnOpenNewProduct'),
+const elementosInterfaz = {
+    // Cabecera y Estado API
+    insigniaEstadoApi: document.getElementById('apiStatusBadge'),
+    botonAutenticacion: document.getElementById('btnOpenAuth'),
+    textoEstadoAutenticacion: document.getElementById('authStatusText'),
+    botonNuevoProducto: document.getElementById('btnOpenNewProduct'),
 
     // Filtros y Búsqueda
-    categoryPillsContainer: document.getElementById('categoryPillsContainer'),
-    searchInput: document.getElementById('searchInput'),
-    btnClearSearch: document.getElementById('btnClearSearch'),
-    sortSelect: document.getElementById('sortSelect'),
-    btnViewGrid: document.getElementById('btnViewGrid'),
-    btnViewTable: document.getElementById('btnViewTable'),
+    contenedorPillsCategorias: document.getElementById('categoryPillsContainer'),
+    campoBusqueda: document.getElementById('searchInput'),
+    botonLimpiarBusqueda: document.getElementById('btnClearSearch'),
+    selectorOrden: document.getElementById('sortSelect'),
+    botonVistaTarjetas: document.getElementById('btnViewGrid'),
+    botonVistaTabla: document.getElementById('btnViewTable'),
 
-    // Contenedores del catálogo
-    loadingState: document.getElementById('loadingState'),
-    productsGrid: document.getElementById('productsGrid'),
-    productsTableContainer: document.getElementById('productsTableContainer'),
-    productsTableBody: document.getElementById('productsTableBody'),
+    // Contenedores del Catálogo
+    indicadorCarga: document.getElementById('loadingState'),
+    cuadriculaProductos: document.getElementById('productsGrid'),
+    contenedorTablaProductos: document.getElementById('productsTableContainer'),
+    cuerpoTablaProductos: document.getElementById('productsTableBody'),
 
-    // Modal Producto
-    productModal: document.getElementById('productModal'),
-    productModalTitle: document.getElementById('productModalTitle'),
-    productForm: document.getElementById('productForm'),
-    formProductId: document.getElementById('formProductId'),
-    formSku: document.getElementById('formSku'),
-    formCategory: document.getElementById('formCategory'),
-    formName: document.getElementById('formName'),
-    formPrice: document.getElementById('formPrice'),
-    formStock: document.getElementById('formStock'),
-    formImageUrl: document.getElementById('formImageUrl'),
-    formDescription: document.getElementById('formDescription'),
-    btnCancelProductModal: document.getElementById('btnCancelProductModal'),
-    btnCloseProductModal: document.getElementById('btnCloseProductModal'),
-    btnSaveProduct: document.getElementById('btnSaveProduct'),
+    // Modal de Producto
+    modalProducto: document.getElementById('productModal'),
+    tituloModalProducto: document.getElementById('productModalTitle'),
+    formularioProducto: document.getElementById('productForm'),
+    campoIdProducto: document.getElementById('formProductId'),
+    campoCodigoSku: document.getElementById('formSku'),
+    campoCategoria: document.getElementById('formCategory'),
+    campoNombre: document.getElementById('formName'),
+    campoPrecio: document.getElementById('formPrice'),
+    campoStock: document.getElementById('formStock'),
+    campoImagenUrl: document.getElementById('formImageUrl'),
+    campoDescripcion: document.getElementById('formDescription'),
+    botonCancelarProducto: document.getElementById('btnCancelProductModal'),
+    botonCerrarModalProducto: document.getElementById('btnCloseProductModal'),
+    botonGuardarProducto: document.getElementById('btnSaveProduct'),
 
-    // Modal Eliminar
-    deleteModal: document.getElementById('deleteModal'),
-    deleteProductName: document.getElementById('deleteProductName'),
-    btnCancelDelete: document.getElementById('btnCancelDelete'),
-    btnConfirmDelete: document.getElementById('btnConfirmDelete'),
+    // Modal de Eliminación
+    modalEliminar: document.getElementById('deleteModal'),
+    nombreProductoAEliminar: document.getElementById('deleteProductName'),
+    botonCancelarEliminar: document.getElementById('btnCancelDelete'),
+    botonConfirmarEliminar: document.getElementById('btnConfirmDelete'),
 
-    // Modal Auth
-    authModal: document.getElementById('authModal'),
-    authForm: document.getElementById('authForm'),
-    authIdentifier: document.getElementById('authIdentifier'),
-    authPassword: document.getElementById('authPassword'),
-    btnCloseAuthModal: document.getElementById('btnCloseAuthModal'),
-    btnSubmitAuth: document.getElementById('btnSubmitAuth')
+    // Modal de Autenticación
+    modalAutenticacion: document.getElementById('authModal'),
+    formularioAutenticacion: document.getElementById('authForm'),
+    campoIdentificador: document.getElementById('authIdentifier'),
+    campoClave: document.getElementById('authPassword'),
+    botonCerrarModalAuth: document.getElementById('btnCloseAuthModal'),
+    botonEnviarAuth: document.getElementById('btnSubmitAuth')
 };
 
 // ================= INICIALIZACIÓN =================
 document.addEventListener('DOMContentLoaded', () => {
-    initApp();
+    iniciarAplicacion();
 });
 
-async function initApp() {
-    updateAuthUI();
-    registerEventListeners();
-    await checkApiStatus();
-    await loadProducts();
+async function iniciarAplicacion() {
+    actualizarInterfazUsuario();
+    registrarManejadoresEventos();
+    await verificarEstadoServidor();
+    await cargarProductos();
 }
 
 /**
- * Verifica si el backend está respondiendo adecuadamente.
+ * Verifica si el backend está activo y en línea.
  */
-async function checkApiStatus() {
-    const isOnline = await ApiService.checkHealth();
-    if (DOM.apiStatusBadge) {
-        if (isOnline) {
-            DOM.apiStatusBadge.className = 'hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
-            DOM.apiStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span>API Online</span>';
+async function verificarEstadoServidor() {
+    const servidorActivo = await ServicioApi.verificarConexion();
+    if (elementosInterfaz.insigniaEstadoApi) {
+        if (servidorActivo) {
+            elementosInterfaz.insigniaEstadoApi.className = 'hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+            elementosInterfaz.insigniaEstadoApi.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span>API Online</span>';
         } else {
-            DOM.apiStatusBadge.className = 'hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200';
-            DOM.apiStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span><span>API Desconectada</span>';
+            elementosInterfaz.insigniaEstadoApi.className = 'hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200';
+            elementosInterfaz.insigniaEstadoApi.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span><span>API Desconectada</span>';
         }
     }
 }
 
 /**
- * Carga productos desde el Backend de forma asíncrona (Semana 4: Fetch API).
+ * Carga los productos desde el servidor de forma asíncrona (Fetch API con async/await).
  */
-async function loadProducts() {
+async function cargarProductos() {
     try {
-        setLoading(true);
-        const data = await ApiService.getProducts(state.searchQuery, state.selectedCategory);
-        state.products = data;
-        renderCatalog();
-        renderStats(state.products);
-    } catch (error) {
-        showToast(`Error al cargar catálogo: ${error.message}`, 'error');
+        establecerEstadoCarga(true);
+        const datosRecibidos = await ServicioApi.obtenerProductos(
+            estadoAplicacion.textoBusqueda,
+            estadoAplicacion.categoriaSeleccionada
+        );
+        estadoAplicacion.listaProductos = datosRecibidos;
+        renderizarCatalogo();
+        renderizarEstadisticas(estadoAplicacion.listaProductos);
+    } catch (errorCapturado) {
+        mostrarToast(`Error al cargar catálogo: ${errorCapturado.message}`, 'error');
     } finally {
-        setLoading(false);
+        establecerEstadoCarga(false);
     }
 }
 
 /**
- * Muestra o esconde el estado de carga en el DOM.
+ * Muestra u oculta el spinner de carga en el DOM.
+ * @param {boolean} estaCargando 
  */
-function setLoading(isLoading) {
-    if (isLoading) {
-        DOM.loadingState.classList.remove('hidden');
-        DOM.productsGrid.classList.add('hidden');
-        DOM.productsTableContainer.classList.add('hidden');
+function establecerEstadoCarga(estaCargando) {
+    if (estaCargando) {
+        elementosInterfaz.indicadorCarga.classList.remove('hidden');
+        elementosInterfaz.cuadriculaProductos.classList.add('hidden');
+        elementosInterfaz.contenedorTablaProductos.classList.add('hidden');
     } else {
-        DOM.loadingState.classList.add('hidden');
-        if (state.currentView === 'grid') {
-            DOM.productsGrid.classList.remove('hidden');
-            DOM.productsTableContainer.classList.add('hidden');
+        elementosInterfaz.indicadorCarga.classList.add('hidden');
+        if (estadoAplicacion.vistaActual === 'tarjetas') {
+            elementosInterfaz.cuadriculaProductos.classList.remove('hidden');
+            elementosInterfaz.contenedorTablaProductos.classList.add('hidden');
         } else {
-            DOM.productsGrid.classList.add('hidden');
-            DOM.productsTableContainer.classList.remove('hidden');
+            elementosInterfaz.cuadriculaProductos.classList.add('hidden');
+            elementosInterfaz.contenedorTablaProductos.classList.remove('hidden');
         }
     }
 }
 
 /**
- * Aplica ordenación en memoria y renderiza en la vista seleccionada.
+ * Aplica ordenamiento a la lista de productos y la renderiza en el DOM.
  */
-function renderCatalog() {
-    let sorted = [...state.products];
+function renderizarCatalogo() {
+    let productosOrdenados = [...estadoAplicacion.listaProductos];
 
-    // Ordenamiento dinámico
-    switch (state.currentSort) {
+    switch (estadoAplicacion.ordenActual) {
         case 'name_asc':
-            sorted.sort((a, b) => a.name.localeCompare(b.name));
+            productosOrdenados.sort((a, b) => (a.nombre || a.name || '').localeCompare(b.nombre || b.name || ''));
             break;
         case 'name_desc':
-            sorted.sort((a, b) => b.name.localeCompare(a.name));
+            productosOrdenados.sort((a, b) => (b.nombre || b.name || '').localeCompare(a.nombre || a.name || ''));
             break;
         case 'price_asc':
-            sorted.sort((a, b) => a.price - b.price);
+            productosOrdenados.sort((a, b) => (a.precio ?? a.price) - (b.precio ?? b.price));
             break;
         case 'price_desc':
-            sorted.sort((a, b) => b.price - a.price);
+            productosOrdenados.sort((a, b) => (b.precio ?? b.price) - (a.precio ?? a.price));
             break;
         case 'stock_asc':
-            sorted.sort((a, b) => a.stock - b.stock);
+            productosOrdenados.sort((a, b) => a.stock - b.stock);
             break;
         case 'stock_desc':
-            sorted.sort((a, b) => b.stock - a.stock);
+            productosOrdenados.sort((a, b) => b.stock - a.stock);
             break;
     }
 
-    if (state.currentView === 'grid') {
-        renderProductCards(sorted, DOM.productsGrid);
+    if (estadoAplicacion.vistaActual === 'tarjetas') {
+        renderizarTarjetas(productosOrdenados, elementosInterfaz.cuadriculaProductos);
     } else {
-        renderProductTable(sorted, DOM.productsTableBody);
+        renderizarTabla(productosOrdenados, elementosInterfaz.cuerpoTablaProductos);
     }
 }
 
-// ================= GESTIÓN DE EVENTOS (SEMANAS 1 A 3) =================
-function registerEventListeners() {
-    // 1. Filtro por categoría (Pills)
-    DOM.categoryPillsContainer.addEventListener('click', (e) => {
-        const targetBtn = e.target.closest('button[data-category]');
-        if (!targetBtn) return;
+// ================= GESTIÓN DE EVENTOS DEL DOM (SEMANAS 1 A 3) =================
+function registrarManejadoresEventos() {
+    // 1. Filtro por categoría (Pills interactivos)
+    elementosInterfaz.contenedorPillsCategorias.addEventListener('click', (evento) => {
+        const botonObjetivo = evento.target.closest('button[data-category]');
+        if (!botonObjetivo) return;
 
-        DOM.categoryPillsContainer.querySelectorAll('.category-pill').forEach(btn => {
-            btn.classList.remove('active', 'bg-brand-600', 'text-white', 'shadow-sm');
-            btn.classList.add('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-100');
+        elementosInterfaz.contenedorPillsCategorias.querySelectorAll('.category-pill').forEach(boton => {
+            boton.classList.remove('active', 'bg-brand-600', 'text-white', 'shadow-sm');
+            boton.classList.add('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-100');
         });
 
-        targetBtn.classList.add('active', 'bg-brand-600', 'text-white', 'shadow-sm');
-        targetBtn.classList.remove('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-100');
+        botonObjetivo.classList.add('active', 'bg-brand-600', 'text-white', 'shadow-sm');
+        botonObjetivo.classList.remove('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-100');
 
-        state.selectedCategory = targetBtn.dataset.category;
-        loadProducts();
+        estadoAplicacion.categoriaSeleccionada = botonObjetivo.dataset.category;
+        cargarProductos();
     });
 
     // 2. Búsqueda en tiempo real (Input con debounce)
-    let searchDebounceTimeout = null;
-    DOM.searchInput.addEventListener('input', (e) => {
-        const val = e.target.value.trim();
-        DOM.btnClearSearch.classList.toggle('hidden', val === '');
+    let temporizadorDebounce = null;
+    elementosInterfaz.campoBusqueda.addEventListener('input', (evento) => {
+        const textoIngresado = evento.target.value.trim();
+        elementosInterfaz.botonLimpiarBusqueda.classList.toggle('hidden', textoIngresado === '');
 
-        clearTimeout(searchDebounceTimeout);
-        searchDebounceTimeout = setTimeout(() => {
-            state.searchQuery = val;
-            loadProducts();
+        clearTimeout(temporizadorDebounce);
+        temporizadorDebounce = setTimeout(() => {
+            estadoAplicacion.textoBusqueda = textoIngresado;
+            cargarProductos();
         }, 300);
     });
 
-    DOM.btnClearSearch.addEventListener('click', () => {
-        DOM.searchInput.value = '';
-        DOM.btnClearSearch.classList.add('hidden');
-        state.searchQuery = '';
-        loadProducts();
+    elementosInterfaz.botonLimpiarBusqueda.addEventListener('click', () => {
+        elementosInterfaz.campoBusqueda.value = '';
+        elementosInterfaz.botonLimpiarBusqueda.classList.add('hidden');
+        estadoAplicacion.textoBusqueda = '';
+        cargarProductos();
     });
 
     // 3. Ordenación
-    DOM.sortSelect.addEventListener('change', (e) => {
-        state.currentSort = e.target.value;
-        renderCatalog();
+    elementosInterfaz.selectorOrden.addEventListener('change', (evento) => {
+        estadoAplicacion.ordenActual = evento.target.value;
+        renderizarCatalogo();
     });
 
-    // 4. Conmutar Vistas (Grid vs Tabla)
-    DOM.btnViewGrid.addEventListener('click', () => {
-        state.currentView = 'grid';
-        DOM.btnViewGrid.classList.add('text-brand-600', 'bg-brand-50');
-        DOM.btnViewGrid.classList.remove('text-slate-400');
-        DOM.btnViewTable.classList.remove('text-brand-600', 'bg-brand-50');
-        DOM.btnViewTable.classList.add('text-slate-400');
-        setLoading(false);
-        renderCatalog();
+    // 4. Cambiar entre Vista Tarjetas y Vista Tabla
+    elementosInterfaz.botonVistaTarjetas.addEventListener('click', () => {
+        estadoAplicacion.vistaActual = 'tarjetas';
+        elementosInterfaz.botonVistaTarjetas.classList.add('text-brand-600', 'bg-brand-50');
+        elementosInterfaz.botonVistaTarjetas.classList.remove('text-slate-400');
+        elementosInterfaz.botonVistaTabla.classList.remove('text-brand-600', 'bg-brand-50');
+        elementosInterfaz.botonVistaTabla.classList.add('text-slate-400');
+        establecerEstadoCarga(false);
+        renderizarCatalogo();
     });
 
-    DOM.btnViewTable.addEventListener('click', () => {
-        state.currentView = 'table';
-        DOM.btnViewTable.classList.add('text-brand-600', 'bg-brand-50');
-        DOM.btnViewTable.classList.remove('text-slate-400');
-        DOM.btnViewGrid.classList.remove('text-brand-600', 'bg-brand-50');
-        DOM.btnViewGrid.classList.add('text-slate-400');
-        setLoading(false);
-        renderCatalog();
+    elementosInterfaz.botonVistaTabla.addEventListener('click', () => {
+        estadoAplicacion.vistaActual = 'tabla';
+        elementosInterfaz.botonVistaTabla.classList.add('text-brand-600', 'bg-brand-50');
+        elementosInterfaz.botonVistaTabla.classList.remove('text-slate-400');
+        elementosInterfaz.botonVistaTarjetas.classList.remove('text-brand-600', 'bg-brand-50');
+        elementosInterfaz.botonVistaTarjetas.classList.add('text-slate-400');
+        establecerEstadoCarga(false);
+        renderizarCatalogo();
     });
 
-    // 5. Botón Abrir Modal Nuevo Producto
-    DOM.btnOpenNewProduct.addEventListener('click', () => {
-        resetProductForm();
-        DOM.productModalTitle.textContent = 'Nuevo Útil Escolar';
-        openModal('productModal');
+    // 5. Modal de Creación de Producto
+    elementosInterfaz.botonNuevoProducto.addEventListener('click', () => {
+        restablecerFormularioProducto();
+        elementosInterfaz.tituloModalProducto.textContent = 'Nuevo Útil Escolar';
+        abrirModal('productModal');
     });
 
-    DOM.btnCancelProductModal.addEventListener('click', () => closeModal('productModal'));
-    DOM.btnCloseProductModal.addEventListener('click', () => closeModal('productModal'));
+    elementosInterfaz.botonCancelarProducto.addEventListener('click', () => cerrarModal('productModal'));
+    elementosInterfaz.botonCerrarModalProducto.addEventListener('click', () => cerrarModal('productModal'));
 
-    // 6. Envío del Formulario de Producto (Submit con validación estricta)
-    DOM.productForm.addEventListener('submit', handleProductFormSubmit);
+    // 6. Envío del Formulario de Producto (Submit con validación del cliente)
+    elementosInterfaz.formularioProducto.addEventListener('submit', procesarFormularioProducto);
 
     // 7. Delegación de Eventos en Tarjetas y Tabla (Editar y Eliminar)
-    const handleProductAction = (e) => {
-        const editBtn = e.target.closest('button[data-action="edit"]');
-        const deleteBtn = e.target.closest('button[data-action="delete"]');
+    const despachadorAcciones = (evento) => {
+        const botonEditar = evento.target.closest('button[data-action="edit"]');
+        const botonEliminar = evento.target.closest('button[data-action="delete"]');
 
-        if (editBtn) {
-            const productId = editBtn.dataset.id;
-            handleEditClick(productId);
-        } else if (deleteBtn) {
-            const productId = deleteBtn.dataset.id;
-            const productName = deleteBtn.dataset.name || 'este producto';
-            handleDeleteClick(productId, productName);
+        if (botonEditar) {
+            const idProducto = botonEditar.dataset.id;
+            prepararEdicionProducto(idProducto);
+        } else if (botonEliminar) {
+            const idProducto = botonEliminar.dataset.id;
+            const nombreProducto = botonEliminar.dataset.name || 'este producto';
+            prepararEliminacionProducto(idProducto, nombreProducto);
         }
     };
 
-    DOM.productsGrid.addEventListener('click', handleProductAction);
-    DOM.productsTableContainer.addEventListener('click', handleProductAction);
+    elementosInterfaz.cuadriculaProductos.addEventListener('click', despachadorAcciones);
+    elementosInterfaz.contenedorTablaProductos.addEventListener('click', despachadorAcciones);
 
     // 8. Confirmación de Eliminación
-    DOM.btnCancelDelete.addEventListener('click', () => closeModal('deleteModal'));
-    DOM.btnConfirmDelete.addEventListener('click', confirmDeleteProduct);
+    elementosInterfaz.botonCancelarEliminar.addEventListener('click', () => cerrarModal('deleteModal'));
+    elementosInterfaz.botonConfirmarEliminar.addEventListener('click', confirmarEliminarProducto);
 
-    // 9. Login / Sesión de Administrador
-    DOM.btnOpenAuth.addEventListener('click', () => {
-        if (state.currentUser) {
-            // Si ya tiene sesión, dar opción de cerrar sesión
-            if (confirm(`¿Deseas cerrar la sesión de @${state.currentUser.username}?`)) {
-                localStorage.removeItem('edupapel_user');
-                state.currentUser = null;
-                updateAuthUI();
-                showToast('Sesión finalizada.', 'info');
+    // 9. Autenticación / Login
+    elementosInterfaz.botonAutenticacion.addEventListener('click', () => {
+        if (estadoAplicacion.usuarioActual) {
+            const nombreMostrado = estadoAplicacion.usuarioActual.nombre_usuario || estadoAplicacion.usuarioActual.username;
+            if (confirm(`¿Deseas cerrar la sesión de @${nombreMostrado}?`)) {
+                localStorage.removeItem('usuario_edupapel');
+                estadoAplicacion.usuarioActual = null;
+                actualizarInterfazUsuario();
+                mostrarToast('Sesión finalizada con éxito.', 'info');
             }
         } else {
-            clearFieldErrors(DOM.authForm);
-            DOM.authForm.reset();
-            openModal('authModal');
+            limpiarErroresCampos(elementosInterfaz.formularioAutenticacion);
+            elementosInterfaz.formularioAutenticacion.reset();
+            abrirModal('authModal');
         }
     });
 
-    DOM.btnCloseAuthModal.addEventListener('click', () => closeModal('authModal'));
-    DOM.authForm.addEventListener('submit', handleAuthSubmit);
+    elementosInterfaz.botonCerrarModalAuth.addEventListener('click', () => cerrarModal('authModal'));
+    elementosInterfaz.formularioAutenticacion.addEventListener('submit', procesarFormularioAutenticacion);
 }
 
 // ================= ACCIONES DE PRODUCTO =================
 
 /**
- * Prepara y abre el formulario para editar un producto.
+ * Carga los datos de un producto en el formulario para edición.
+ * @param {number|string} idProducto 
  */
-async function handleEditClick(productId) {
+async function prepararEdicionProducto(idProducto) {
     try {
-        const product = state.products.find(p => p.id == productId) || await ApiService.getProductById(productId);
-        if (!product) throw new Error('Producto no encontrado');
+        const productoEncontrado = estadoAplicacion.listaProductos.find(p => p.id == idProducto) 
+            || await ServicioApi.obtenerProductoPorId(idProducto);
 
-        resetProductForm();
-        DOM.formProductId.value = product.id;
-        DOM.formSku.value = product.sku;
-        DOM.formCategory.value = product.category;
-        DOM.formName.value = product.name;
-        DOM.formPrice.value = product.price;
-        DOM.formStock.value = product.stock;
-        DOM.formImageUrl.value = product.image_url || '';
-        DOM.formDescription.value = product.description || '';
+        if (!productoEncontrado) throw new Error('Producto no encontrado.');
 
-        DOM.productModalTitle.textContent = 'Editar Útil Escolar';
-        openModal('productModal');
-    } catch (error) {
-        showToast(error.message, 'error');
+        restablecerFormularioProducto();
+        elementosInterfaz.campoIdProducto.value = productoEncontrado.id;
+        elementosInterfaz.campoCodigoSku.value = productoEncontrado.codigo_sku || productoEncontrado.sku || '';
+        elementosInterfaz.campoCategoria.value = productoEncontrado.categoria || productoEncontrado.category || '';
+        elementosInterfaz.campoNombre.value = productoEncontrado.nombre || productoEncontrado.name || '';
+        elementosInterfaz.campoPrecio.value = productoEncontrado.precio !== undefined ? productoEncontrado.precio : productoEncontrado.price;
+        elementosInterfaz.campoStock.value = productoEncontrado.stock;
+        elementosInterfaz.campoImagenUrl.value = productoEncontrado.imagen_url || productoEncontrado.image_url || '';
+        elementosInterfaz.campoDescripcion.value = productoEncontrado.descripcion || productoEncontrado.description || '';
+
+        elementosInterfaz.tituloModalProducto.textContent = 'Editar Útil Escolar';
+        abrirModal('productModal');
+    } catch (errorCapturado) {
+        mostrarToast(errorCapturado.message, 'error');
     }
 }
 
 /**
- * Abre el modal para confirmar la eliminación de un útil escolar.
+ * Prepara el modal de confirmación antes de borrar un producto.
  */
-function handleDeleteClick(productId, productName) {
-    state.pendingDelete = { id: productId, name: productName };
-    DOM.deleteProductName.textContent = `"${productName}"`;
-    openModal('deleteModal');
+function prepararEliminacionProducto(idProducto, nombreProducto) {
+    estadoAplicacion.productoAEliminar = { id: idProducto, nombre: nombreProducto };
+    elementosInterfaz.nombreProductoAEliminar.textContent = `"${nombreProducto}"`;
+    abrirModal('deleteModal');
 }
 
 /**
- * Ejecuta la llamada DELETE asíncrona al backend.
+ * Ejecuta la llamada asíncrona DELETE al servidor.
  */
-async function confirmDeleteProduct() {
-    if (!state.pendingDelete) return;
+async function confirmarEliminarProducto() {
+    if (!estadoAplicacion.productoAEliminar) return;
 
     try {
-        DOM.btnConfirmDelete.disabled = true;
-        DOM.btnConfirmDelete.textContent = 'Eliminando...';
+        elementosInterfaz.botonConfirmarEliminar.disabled = true;
+        elementosInterfaz.botonConfirmarEliminar.textContent = 'Eliminando...';
 
-        await ApiService.deleteProduct(state.pendingDelete.id);
-        showToast(`"${state.pendingDelete.name}" ha sido eliminado exitosamente.`, 'success');
-        closeModal('deleteModal');
-        await loadProducts();
-    } catch (error) {
-        showToast(`Error al eliminar: ${error.message}`, 'error');
+        await ServicioApi.eliminarProducto(estadoAplicacion.productoAEliminar.id);
+        mostrarToast(`"${estadoAplicacion.productoAEliminar.nombre}" eliminado exitosamente.`, 'success');
+        cerrarModal('deleteModal');
+        await cargarProductos();
+    } catch (errorCapturado) {
+        mostrarToast(`Error al eliminar: ${errorCapturado.message}`, 'error');
     } finally {
-        DOM.btnConfirmDelete.disabled = false;
-        DOM.btnConfirmDelete.textContent = 'Eliminar';
-        state.pendingDelete = null;
+        elementosInterfaz.botonConfirmarEliminar.disabled = false;
+        elementosInterfaz.botonConfirmarEliminar.textContent = 'Eliminar';
+        estadoAplicacion.productoAEliminar = null;
     }
 }
 
 /**
- * Procesa el envío del formulario (POST / PUT) con validación en el cliente.
+ * Valida y envía el formulario de producto (POST / PUT).
  */
-async function handleProductFormSubmit(e) {
-    e.preventDefault();
-    clearFieldErrors(DOM.productForm);
+async function procesarFormularioProducto(evento) {
+    evento.preventDefault();
+    limpiarErroresCampos(elementosInterfaz.formularioProducto);
 
-    // 1. Validación en el cliente (DOM & JS Puro)
-    let hasErrors = false;
+    let existenErrores = false;
 
-    const sku = DOM.formSku.value.trim().toUpperCase();
-    if (!sku) {
-        showFieldError(DOM.formSku, 'El código SKU es obligatorio.');
-        hasErrors = true;
+    const codigoSku = elementosInterfaz.campoCodigoSku.value.trim().toUpperCase();
+    if (!codigoSku) {
+        mostrarErrorCampo(elementosInterfaz.campoCodigoSku, 'El código SKU es obligatorio.');
+        existenErrores = true;
     }
 
-    const category = DOM.formCategory.value.trim();
-    if (!category) {
-        showFieldError(DOM.formCategory, 'Seleccione una categoría válida.');
-        hasErrors = true;
+    const categoria = elementosInterfaz.campoCategoria.value.trim();
+    if (!categoria) {
+        mostrarErrorCampo(elementosInterfaz.campoCategoria, 'Seleccione una categoría válida.');
+        existenErrores = true;
     }
 
-    const name = DOM.formName.value.trim();
-    if (!name || name.length < 3) {
-        showFieldError(DOM.formName, 'El nombre debe tener al menos 3 caracteres.');
-        hasErrors = true;
+    const nombre = elementosInterfaz.campoNombre.value.trim();
+    if (!nombre || nombre.length < 3) {
+        mostrarErrorCampo(elementosInterfaz.campoNombre, 'El nombre debe tener al menos 3 caracteres.');
+        existenErrores = true;
     }
 
-    const price = parseFloat(DOM.formPrice.value);
-    if (isNaN(price) || price <= 0) {
-        showFieldError(DOM.formPrice, 'Ingrese un precio válido mayor a 0.');
-        hasErrors = true;
+    const precio = parseFloat(elementosInterfaz.campoPrecio.value);
+    if (isNaN(precio) || precio <= 0) {
+        mostrarErrorCampo(elementosInterfaz.campoPrecio, 'Ingrese un precio válido mayor a 0.');
+        existenErrores = true;
     }
 
-    const stock = parseInt(DOM.formStock.value, 10);
+    const stock = parseInt(elementosInterfaz.campoStock.value, 10);
     if (isNaN(stock) || stock < 0) {
-        showFieldError(DOM.formStock, 'El stock debe ser un entero mayor o igual a 0.');
-        hasErrors = true;
+        mostrarErrorCampo(elementosInterfaz.campoStock, 'El stock debe ser un entero mayor o igual a 0.');
+        existenErrores = true;
     }
 
-    if (hasErrors) return;
+    if (existenErrores) return;
 
-    const payload = {
-        sku,
-        category,
-        name,
-        price,
-        stock,
-        image_url: DOM.formImageUrl.value.trim(),
-        description: DOM.formDescription.value.trim()
+    const datosProducto = {
+        codigo_sku: codigoSku,
+        sku: codigoSku,
+        categoria: categoria,
+        nombre: nombre,
+        precio: precio,
+        stock: stock,
+        imagen_url: elementosInterfaz.campoImagenUrl.value.trim(),
+        descripcion: elementosInterfaz.campoDescripcion.value.trim()
     };
 
-    const isEditing = Boolean(DOM.formProductId.value);
-    const saveBtn = DOM.btnSaveProduct;
+    const esEdicion = Boolean(elementosInterfaz.campoIdProducto.value);
+    const botonGuardar = elementosInterfaz.botonGuardarProducto;
 
     try {
-        saveBtn.disabled = true;
-        saveBtn.innerHTML = '<span>Guardando...</span>';
+        botonGuardar.disabled = true;
+        botonGuardar.innerHTML = '<span>Guardando...</span>';
 
-        if (isEditing) {
-            await ApiService.updateProduct(DOM.formProductId.value, payload);
-            showToast('Útil escolar actualizado exitosamente.', 'success');
+        if (esEdicion) {
+            await ServicioApi.actualizarProducto(elementosInterfaz.campoIdProducto.value, datosProducto);
+            mostrarToast('Útil escolar actualizado exitosamente.', 'success');
         } else {
-            await ApiService.createProduct(payload);
-            showToast('Nuevo útil escolar registrado exitosamente.', 'success');
+            await ServicioApi.crearProducto(datosProducto);
+            mostrarToast('Nuevo útil escolar registrado exitosamente.', 'success');
         }
 
-        closeModal('productModal');
-        await loadProducts();
-    } catch (error) {
-        showToast(error.message, 'error');
+        cerrarModal('productModal');
+        await cargarProductos();
+    } catch (errorCapturado) {
+        mostrarToast(errorCapturado.message, 'error');
     } finally {
-        saveBtn.disabled = false;
-        saveBtn.innerHTML = '<span>Guardar</span>';
+        botonGuardar.disabled = false;
+        botonGuardar.innerHTML = '<span>Guardar</span>';
     }
 }
 
-function resetProductForm() {
-    clearFieldErrors(DOM.productForm);
-    DOM.productForm.reset();
-    DOM.formProductId.value = '';
+function restablecerFormularioProducto() {
+    limpiarErroresCampos(elementosInterfaz.formularioProducto);
+    elementosInterfaz.formularioProducto.reset();
+    elementosInterfaz.campoIdProducto.value = '';
 }
 
 // ================= ACCIONES DE AUTENTICACIÓN =================
 
-async function handleAuthSubmit(e) {
-    e.preventDefault();
-    clearFieldErrors(DOM.authForm);
+async function procesarFormularioAutenticacion(evento) {
+    evento.preventDefault();
+    limpiarErroresCampos(elementosInterfaz.formularioAutenticacion);
 
-    const identifier = DOM.authIdentifier.value.trim();
-    const password = DOM.authPassword.value.trim();
+    const identificador = elementosInterfaz.campoIdentificador.value.trim();
+    const clave = elementosInterfaz.campoClave.value.trim();
 
-    if (!identifier) {
-        showFieldError(DOM.authIdentifier, 'Ingrese su usuario o correo.');
+    if (!identificador) {
+        mostrarErrorCampo(elementosInterfaz.campoIdentificador, 'Ingrese su usuario o correo.');
         return;
     }
-    if (!password) {
-        showFieldError(DOM.authPassword, 'Ingrese su contraseña.');
+    if (!clave) {
+        mostrarErrorCampo(elementosInterfaz.campoClave, 'Ingrese su contraseña.');
         return;
     }
 
     try {
-        DOM.btnSubmitAuth.disabled = true;
-        DOM.btnSubmitAuth.textContent = 'Verificando hash...';
+        elementosInterfaz.botonEnviarAuth.disabled = true;
+        elementosInterfaz.botonEnviarAuth.textContent = 'Verificando hash...';
 
-        const result = await ApiService.login({ identifier, password });
-        state.currentUser = result.user;
-        localStorage.setItem('edupapel_user', JSON.stringify(result.user));
+        const resultado = await ServicioApi.iniciarSesion({ identificador, clave });
+        const usuarioSesion = resultado.usuario || resultado.user;
 
-        updateAuthUI();
-        closeModal('authModal');
-        showToast(`¡Bienvenido, ${result.user.username}! Modo Administrador activado.`, 'success');
-    } catch (error) {
-        showToast(`Error de autenticación: ${error.message}`, 'error');
+        estadoAplicacion.usuarioActual = usuarioSesion;
+        localStorage.setItem('usuario_edupapel', JSON.stringify(usuarioSesion));
+
+        actualizarInterfazUsuario();
+        cerrarModal('authModal');
+        const nombreMostrado = usuarioSesion.nombre_usuario || usuarioSesion.username;
+        mostrarToast(`¡Bienvenido, ${nombreMostrado}! Modo Administrador activo.`, 'success');
+    } catch (errorCapturado) {
+        mostrarToast(`Error de autenticación: ${errorCapturado.message}`, 'error');
     } finally {
-        DOM.btnSubmitAuth.disabled = false;
-        DOM.btnSubmitAuth.textContent = 'Iniciar Sesión';
+        elementosInterfaz.botonEnviarAuth.disabled = false;
+        elementosInterfaz.botonEnviarAuth.textContent = 'Iniciar Sesión';
     }
 }
 
-function updateAuthUI() {
-    if (state.currentUser) {
-        DOM.authStatusText.textContent = `@${state.currentUser.username} (Salir)`;
-        DOM.btnOpenAuth.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-300');
+function actualizarInterfazUsuario() {
+    if (estadoAplicacion.usuarioActual) {
+        const nombreUsuario = estadoAplicacion.usuarioActual.nombre_usuario || estadoAplicacion.usuarioActual.username;
+        elementosInterfaz.textoEstadoAutenticacion.textContent = `@${nombreUsuario} (Salir)`;
+        elementosInterfaz.botonAutenticacion.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-300');
     } else {
-        DOM.authStatusText.textContent = 'Admin (Login)';
-        DOM.btnOpenAuth.classList.remove('bg-emerald-50', 'text-emerald-700', 'border-emerald-300');
+        elementosInterfaz.textoEstadoAutenticacion.textContent = 'Admin (Login)';
+        elementosInterfaz.botonAutenticacion.classList.remove('bg-emerald-50', 'text-emerald-700', 'border-emerald-300');
     }
 }
-

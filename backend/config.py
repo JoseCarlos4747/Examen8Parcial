@@ -1,25 +1,30 @@
 """
 Configuración centralizada de la aplicación.
 Semana 8: Evita hardcoding de claves secretas y rutas sensibles mediante python-dotenv.
+Todas las variables, constantes y atributos se encuentran nombrados en español.
 """
 import os
 from dotenv import load_dotenv
 
-# Cargar variables de entorno desde el archivo .env
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-dotenv_path = os.path.join(BASE_DIR, '.env')
-if os.path.exists(dotenv_path):
-    load_dotenv(dotenv_path)
+# Ruta absoluta al directorio base del backend
+DIRECTORIO_BASE = os.path.dirname(os.path.abspath(__file__))
+ruta_archivo_entorno = os.path.join(DIRECTORIO_BASE, '.env')
+
+if os.path.exists(ruta_archivo_entorno):
+    load_dotenv(ruta_archivo_entorno)
 
 
-class Config:
-    """Clase base de configuración aplicando Principio de Responsabilidad Única (SRP)."""
-    SECRET_KEY = os.getenv('SECRET_KEY', 'default_secret_key_fallback_only')
-    FLASK_ENV = os.getenv('FLASK_ENV', 'development')
-    DEBUG = os.getenv('FLASK_DEBUG', 'True').lower() in ('true', '1', 't')
-    PORT = int(os.getenv('FLASK_PORT', 5000))
+class Configuracion:
+    """Clase de configuración aplicando el Principio de Responsabilidad Única (SRP)."""
+    CLAVE_SECRETA = os.getenv('SECRET_KEY', 'clave_secreta_edupapel_2026')
+    ENTORNO = os.getenv('FLASK_ENV', 'development')
+    MODO_DEPURACION = os.getenv('FLASK_DEBUG', 'True').lower() in ('true', '1', 't')
+    PUERTO = int(os.getenv('FLASK_PORT', 5000))
 
-    # Ruta a la base de datos SQLite
-    DB_NAME = os.getenv('DATABASE_NAME', 'libreria_escolar.db')
-    DB_PATH = os.path.join(BASE_DIR, DB_NAME)
+    # Nombre y ruta del archivo SQLite
+    NOMBRE_BASE_DATOS = os.getenv('DATABASE_NAME', 'libreria_escolar.db')
+    RUTA_BASE_DATOS = os.path.join(DIRECTORIO_BASE, NOMBRE_BASE_DATOS)
 
+    # Compatibilidad con variables internas que busca Flask
+    SECRET_KEY = CLAVE_SECRETA
+    DEBUG = MODO_DEPURACION

@@ -2,32 +2,47 @@
 Clase Base de Servicio.
 Aplica principios de Programación Orientada a Objetos (Herencia y Abstracción).
 Centraliza la estructura estándar de respuestas de la lógica de negocio.
+Variables, métodos y parámetros en español.
 """
 
 
-class BaseService:
+class ServicioBase:
     """
     Clase padre de la cual heredan los servicios del sistema.
     Aplica el principio Open/Closed (OCP) permitiendo extender lógica común.
     """
 
     @staticmethod
-    def success_response(data=None, message="Operación exitosa", status_code=200):
+    def respuesta_exitosa(datos=None, mensaje="Operación exitosa", codigo_estado=200):
         """Genera una respuesta estandarizada de éxito."""
-        return {
-            'success': True,
-            'message': message,
-            'data': data
-        }, status_code
+        cuerpo_respuesta = {
+            'exito': True,
+            'success': True,  # Mantiene compatibilidad
+            'mensaje': mensaje,
+            'message': mensaje,
+            'datos': datos,
+            'data': datos
+        }
+        return cuerpo_respuesta, codigo_estado
 
     @staticmethod
-    def error_response(message="Ha ocurrido un error", status_code=400, errors=None):
+    def respuesta_error(mensaje="Ha ocurrido un error", codigo_estado=400, errores=None):
         """Genera una respuesta estandarizada de error."""
-        response = {
+        cuerpo_respuesta = {
+            'exito': False,
             'success': False,
-            'message': message
+            'mensaje': mensaje,
+            'message': mensaje
         }
-        if errors:
-            response['errors'] = errors
-        return response, status_code
+        if errores:
+            cuerpo_respuesta['errores'] = errores
+            cuerpo_respuesta['errors'] = errores
+        return cuerpo_respuesta, codigo_estado
 
+    # Alias para compatibilidad
+    success_response = respuesta_exitosa
+    error_response = respuesta_error
+
+
+# Alias de clase
+BaseService = ServicioBase
